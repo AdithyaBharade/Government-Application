@@ -1,0 +1,38 @@
+# Render Blueprint – deploys the Kadata API (New → Blueprint → pick this repo)
+services:
+  - type: web
+    name: kadata-api
+    runtime: node
+    plan: free
+    rootDir: server
+    # --include=dev: TypeScript and Prisma CLI are needed to build
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: CORS_ORIGIN
+        sync: false
+      - key: SLA_DAYS
+        value: "21"
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false

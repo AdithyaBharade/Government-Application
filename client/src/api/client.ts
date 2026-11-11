@@ -16,7 +16,7 @@ export const tokenStore = {
 
 /** Single axios instance for the whole app. */
 export const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`,
+  baseURL: `${(import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')}/api`,
   timeout: 60_000, // AI calls with documents can take a while
 });
 
