@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClipboardCheck, RotateCcw, Send } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAi } from '../../api/hooks';
 import type { AiRun, ApplicationDetail, DocumentCheck } from '../../api/types';
 import { currentLang } from '../../i18n';
 import { rupees } from '../../lib/format';
-import { AiBox, CheckStatusChip, feedbackFor } from '../AiBox';
+import { AiBox, CheckStatusChip, feedbackFor, UseSuggestionButton } from '../AiBox';
 import { FlagChips } from '../badges';
+import { Panel } from '../common';
 import { ConfirmDialog, ReasonField } from '../ConfirmDialog';
 import { useStageAction } from './useStageAction';
 
@@ -30,11 +37,7 @@ export function VaPanel({ app }: { app: ApplicationDetail }) {
   const canForward = remarks.trim().length >= 10;
 
   return (
-    <section className="card space-y-4 p-4">
-      <h2 className="flex items-center gap-2 font-semibold">
-        <ClipboardCheck size={18} className="text-brand-600" aria-hidden /> {t('va.title')}
-      </h2>
-
+    <Panel title={t('va.title')} icon={<ClipboardCheck className="size-[18px] text-brand-600" aria-hidden />} contentClassName="space-y-4">
       <AiBox
         title={t('ai.docCheck.title')}
         desc={t('ai.docCheck.desc')}
@@ -48,17 +51,17 @@ export function VaPanel({ app }: { app: ApplicationDetail }) {
           <div className="space-y-3">
             <div className="flex flex-wrap gap-1.5">
               <FlagChips flags={out.flags} />
-              <span className={`chip ${out.suggestedAction === 'RETURN' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-50 text-emerald-800'}`}>
+              <Badge variant="outline" className={out.suggestedAction === 'RETURN' ? 'border-amber-200 bg-amber-100 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}>
                 {out.suggestedAction === 'RETURN' ? t('ai.docCheck.suggestsReturn') : t('ai.docCheck.suggestsForward')}
-              </span>
+              </Badge>
             </div>
-            <ul className="divide-y divide-line rounded-lg border border-line">
+            <ul className="divide-y rounded-lg border">
               {out.checks.map((c, i) => (
                 <li key={i} className="flex items-start gap-3 px-3 py-2 text-sm">
                   <CheckStatusChip status={c.status} />
                   <div className="min-w-0">
                     <div className="font-medium">{c.item}</div>
-                    <div className="text-muted">{c.detail}</div>
+                    <div className="text-muted-foreground">{c.detail}</div>
                   </div>
                 </li>
               ))}
@@ -70,55 +73,61 @@ export function VaPanel({ app }: { app: ApplicationDetail }) {
             )}
             <div className="rounded-lg bg-ai-50 p-3">
               <p className="text-sm whitespace-pre-line">{out.suggestedRemarks}</p>
-              <button
-                className="btn-ai mt-2 min-h-9 px-3"
-                onClick={() => {
+              <UseSuggestionButton
+                used={used === out.suggestedRemarks}
+                onUse={() => {
                   setRemarks(out.suggestedRemarks);
                   setUsed(out.suggestedRemarks);
                 }}
-              >
-                {used === out.suggestedRemarks ? t('ai.used') : t('ai.use')}
-              </button>
+              />
             </div>
           </div>
         )}
       </AiBox>
 
-      <fieldset>
-        <legend className="label">{t('va.checklistTitle')}</legend>
+      <fieldset className="space-y-2">
+        <legend className="mb-2 text-sm font-medium text-muted-foreground">{t('va.checklistTitle')}</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {CHECKS.map((c) => (
-            <label key={c} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-line px-3 py-2 text-sm has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
-              <input type="checkbox" className="size-5 accent-brand-700" checked={Boolean(checks[c])} onChange={(e) => setChecks({ ...checks, [c]: e.target.checked })} />
+            <Label
+              key={c}
+              htmlFor={`va-${c}`}
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 font-normal has-data-checked:border-brand-500 has-data-checked:bg-brand-50"
+            >
+              <Checkbox id={`va-${c}`} checked={Boolean(checks[c])} onCheckedChange={(v) => setChecks({ ...checks, [c]: Boolean(v) })} />
               {t(`va.checklist.${c}`)}
-            </label>
+            </Label>
           ))}
         </div>
       </fieldset>
 
-      <label className="block">
-        <span className="label">{t('va.remarks')}</span>
-        <textarea className="input min-h-28" value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder={t('va.remarksPh')} />
-      </label>
+      <div className="space-y-1.5">
+        <Label htmlFor="va-remarks">{t('va.remarks')}</Label>
+        <Textarea id="va-remarks" className="min-h-28" value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder={t('va.remarksPh')} />
+      </div>
 
-      {action.error && !returning && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{action.error}</p>}
+      {action.error && !returning && (
+        <Alert variant="destructive">
+          <AlertDescription>{action.error}</AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <button
-          className="btn-primary flex-1"
+        <Button
+          size="lg"
+          className="flex-1"
           disabled={!canForward || action.busy}
           onClick={() =>
-            action.submit({
-              action: 'FORWARD',
-              report: { notes: remarks, checklist: checks, recommendation: 'APPROVE' },
-              ai: feedbackFor(run, used, remarks),
-            }).catch(() => undefined)
+            action
+              .submit({ action: 'FORWARD', report: { notes: remarks, checklist: checks, recommendation: 'APPROVE' }, ai: feedbackFor(run, used, remarks) })
+              .catch(() => undefined)
           }
         >
-          <Send size={16} aria-hidden /> {t('va.forward')}
-        </button>
-        <button
-          className="btn-warn"
+          <Send aria-hidden /> {t('va.forward')}
+        </Button>
+        <Button
+          size="lg"
+          variant="warn"
           onClick={() => {
             if (!reason && out?.suggestedAction === 'RETURN') {
               setReason(out.suggestedRemarks);
@@ -128,8 +137,8 @@ export function VaPanel({ app }: { app: ApplicationDetail }) {
             setReturning(true);
           }}
         >
-          <RotateCcw size={16} aria-hidden /> {t('va.returnToApplicant')}
-        </button>
+          <RotateCcw aria-hidden /> {t('va.returnToApplicant')}
+        </Button>
       </div>
 
       <ConfirmDialog
@@ -145,6 +154,6 @@ export function VaPanel({ app }: { app: ApplicationDetail }) {
       >
         <ReasonField value={reason} onChange={setReason} />
       </ConfirmDialog>
-    </section>
+    </Panel>
   );
 }

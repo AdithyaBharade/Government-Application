@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useAction } from '../../api/hooks';
 import { errorMessage } from '../../api/client';
 import type { ActionPayload } from '../../api/types';
 
-/** Submit a workflow action, then go back to the queue with a confirmation message. */
+/** Submit a workflow action, confirm with a toast, then go back to the queue. */
 export function useStageAction(appId: string) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -12,7 +13,8 @@ export function useStageAction(appId: string) {
 
   async function submit(payload: ActionPayload) {
     const res = await mutation.mutateAsync(payload);
-    navigate('/', { state: { flash: t('action.done', { stage: t(`stages.${res.stage}`) }) } });
+    toast.success(t('action.done', { stage: t(`stages.${res.stage}`) }));
+    navigate('/');
   }
 
   return {
