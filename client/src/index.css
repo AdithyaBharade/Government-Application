@@ -1,0 +1,64 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Noto Sans', 'Noto Sans Kannada', 'Noto Sans Devanagari', 'Noto Sans Telugu', 'Noto Sans Tamil', system-ui, sans-serif;
+
+  --color-brand-50: #eef7f8;
+  --color-brand-100: #d5ecef;
+  --color-brand-200: #a9d6dd;
+  --color-brand-500: #1d7a8c;
+  --color-brand-600: #156373;
+  --color-brand-700: #0f4c5c;
+  --color-brand-900: #082a33;
+
+  --color-ink: #1c2526;
+  --color-muted: #5b6b6e;
+  --color-line: #dfe6e7;
+  --color-canvas: #f5f7f6;
+
+  --color-ai-50: #f4f1fd;
+  --color-ai-100: #e8e1fb;
+  --color-ai-600: #6246c9;
+  --color-ai-700: #4f36a8;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body { @apply bg-canvas text-ink antialiased; font-size: 15px; line-height: 1.55; }
+/* Indic scripts need a little more line height to stay readable */
+:lang(kn), :lang(te), :lang(ta), :lang(hi) { line-height: 1.7; }
+
+@utility card {
+  @apply rounded-xl border border-line bg-white;
+}
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand-700 text-white hover:bg-brand-900;
+}
+@utility btn-secondary {
+  @apply btn border border-line bg-white text-ink hover:bg-canvas;
+}
+@utility btn-danger {
+  @apply btn bg-red-700 text-white hover:bg-red-800;
+}
+@utility btn-warn {
+  @apply btn border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100;
+}
+@utility btn-ai {
+  @apply btn border border-ai-100 bg-ai-50 text-ai-700 hover:bg-ai-100;
+}
+@utility input {
+  @apply block w-full min-h-11 rounded-lg border border-line bg-white px-3 py-2 text-[15px] outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+}
+@utility label {
+  @apply mb-1 block text-sm font-medium text-muted;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}
