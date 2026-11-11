@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AlertOctagon, CalendarClock, FilePlus2, Inbox, RotateCcw, Sparkles } from 'lucide-react';
+import { AlertOctagon, CheckCircle2, CalendarClock, FilePlus2, Inbox, RotateCcw, Sparkles } from 'lucide-react';
 import { useApplications, useSummary } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,7 @@ export function DashboardPage() {
   const { user } = useAuth();
   const summary = useSummary();
   const queue = useApplications('queue');
+  const flash = (useLocation().state as { flash?: string } | null)?.flash;
 
   if (summary.isLoading || queue.isLoading) return <PageLoader />;
   if (summary.isError || queue.isError || !summary.data || !queue.data) {
@@ -33,6 +34,11 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-5">
+      {flash && (
+        <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800" role="status">
+          <CheckCircle2 size={18} aria-hidden /> {flash}
+        </p>
+      )}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold">{t('dashboard.greeting', { name: personName(user) })}</h1>
