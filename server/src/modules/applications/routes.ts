@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { currentUser, requireAuth } from '../../middleware/auth';
+import { currentUser, requireAuth, requireRole } from '../../middleware/auth';
 import {
   actionSchema,
   createApplication,
@@ -46,6 +46,7 @@ applicationsRouter.get(
 
 applicationsRouter.post(
   '/',
+  requireRole('OPERATOR'),
   asyncHandler(async (req, res) => {
     const app = await createApplication(currentUser(req), createSchema.parse(req.body));
     res.status(201).json({ id: app.id, appNo: app.appNo });
