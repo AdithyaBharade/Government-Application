@@ -1,0 +1,201 @@
+// Kadata – income certificate workflow for a Karnataka Nadakacheri (hobli revenue office)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Who does what in the office
+enum Role {
+  OPERATOR // Atalji Janasnehi Kendra front-desk operator: registers applications, handles returns
+  VA // Village Administrative Officer (Grama Adalitha Adhikari): document verification
+  RI // Revenue Inspector: field verification
+  DT // Deputy Tahsildar: final decision & certificate
+}
+
+/// Where an application sits in the process
+enum Stage {
+  VA_VERIFICATION
+  RI_VERIFICATION
+  DT_DECISION
+  RETURNED_TO_APPLICANT
+  APPROVED
+  REJECTED
+}
+
+enum DocType {
+  AADHAAR
+  RATION_CARD
+  SELF_DECLARATION
+  SALARY_CERTIFICATE
+  RTC // land record (Pahani)
+  FIELD_PHOTO
+  OTHER
+}
+
+enum AuditAction {
+  CREATED
+  DOCUMENT_UPLOADED
+  AI_ASSIST
+  FORWARDED
+  RETURNED
+  RESUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum AiKind {
+  DOCUMENT_CHECK // VA: read documents + cross-check with the form
+  FIELD_CHECKLIST // RI: what to verify on the visit
+  REPORT_DRAFT // RI: rough notes -> formal report
+  CASE_BRIEF // DT: summary + suggested decision + draft reason
+}
+
+/// What the officer did with an AI suggestion (used to measure usefulness)
+enum AiFeedback {
+  ACCEPTED
+  EDITED
+  DISMISSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  nameLocal    String
+  role         Role
+  office       String
+  createdAt    DateTime @default(now())
+
+  applicationsCreated Application[] @relation("CreatedBy")
+  events              AuditEvent[]
+  reports             StageReport[]
+  aiRuns              AiRun[]
+  documents           Document[]
+}
+
+model Application {
+  id                 String    @id @default(cuid())
+  appNo              String    @unique
+  applicantName      String
+  applicantNameLocal String?
+  relationName       String // father / husband name
+  gender             String
+  dob                DateTime?
+  mobile             String
+  aadhaarLast4       String // we never store the full Aadhaar number
+  address            String
+  village            String
+  hobli              String
+  taluk              String
+  district           String
+  occupation         String
+  purpose            String
+  declaredIncome     Int // annual, in rupees
+  incomeSources      Json // { agriculture, salary, business, other } in rupees
+  landAcres          Float?
+  familySize         Int
+
+  stage            Stage     @default(VA_VERIFICATION)
+  receivedAt       DateTime  @default(now())
+  dueAt            DateTime
+  stageEnteredAt   DateTime  @default(now())
+  returnCount      Int       @default(0)
+  lastReturnReason String?
+  flags            String[]  @default([])
+  verifiedIncome   Int?
+  certificateNo    String?   @unique
+  decidedAt        DateTime?
+  decisionReason   String?
+
+  createdById String
+  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
+
+  documents Document[]
+  events    AuditEvent[]
+  reports   StageReport[]
+  aiRuns    AiRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stage, dueAt])
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          DocType
+  originalName  String
+  mimeType      String
+  size          Int
+  storage       String // "r2" | "db"
+  storageKey    String?
+  data          Bytes?
+  extracted     Json? // fields read by AI
+  uploadedById  String
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([applicationId])
+}
+
+/// The officer's own report at a stage (what they verified and what they recommend)
+model StageReport {
+  id             String      @id @default(cuid())
+  applicationId  String
+  application    Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  stage          Stage
+  authorId       String
+  author         User        @relation(fields: [authorId], references: [id])
+  recommendation String? // APPROVE | REJECT
+  verifiedIncome Int?
+  checklist      Json?
+  notes          String
+  createdAt      DateTime    @default(now())
+
+  @@index([applicationId])
+}
+
+/// Append-only history of everything that happened to an application
+model AuditEvent {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  actorId       String?
+  actor         User?       @relation(fields: [actorId], references: [id])
+  action        AuditAction
+  fromStage     Stage?
+  toStage       Stage?
+  comment       String?
+  meta          Json?
+  createdAt     DateTime    @default(now())
+
+  @@index([applicationId, createdAt])
+}
+
+/// Every AI call, its output and what the officer did with it
+model AiRun {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  stage         Stage
+  kind          AiKind
+  model         String
+  lang          String
+  output        Json
+  latencyMs     Int
+  feedback      AiFeedback?
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  createdAt     DateTime    @default(now())
+
+  @@index([applicationId, kind])
+}
