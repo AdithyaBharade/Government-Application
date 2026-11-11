@@ -158,6 +158,8 @@ Pair this with a 5-question survey of officers and a sample audit of 20 approved
 | Area | Choice | Why |
 |---|---|---|
 | Frontend | **React 19 + Vite + TypeScript + Tailwind v4** | Fast to build and small to ship; Tailwind keeps the design consistent across 5 scripts. |
+| UI components | **shadcn/ui** (Base UI primitives), themed to the Kadata palette | Accessible components (keyboard, focus, ARIA) without a heavy library. The components live in the repo, so they could be tuned for field use: 40–44px touch targets, 20px checkboxes, and workflow button variants (warn / AI / reject). Confirmations use AlertDialog; "file moved" feedback uses toasts. |
+| Data grid | **AG Grid Community** for the office register (*All files*) | Desk staff and the DT need sorting, per-column filters, paging and **CSV export** for monthly reporting. The grid is translated into all 5 languages and themed to match. It is **lazy-loaded on desktop only**: phones get large tappable cards instead, and never download the grid. |
 | API calls | **Axios** (single instance with interceptors) + **TanStack Query** | One place for the JWT header, auto-logout on 401, and readable error messages; Query handles caching and refresh after each action. |
 | i18n | **react-i18next**, typed locale files (`en.ts` is the source; TS fails the build if a language is missing a key) | Five complete languages without drift. Adding Marathi is one file. |
 | Backend | **Node + Express + TypeScript**, modular (`auth`, `applications`, `workflow`, `documents`, `ai`, `insights`) | Small, readable, easy to host. |
@@ -241,6 +243,8 @@ server/
 client/
   src/api/                    axios client, types, React Query hooks
   src/i18n/locales/           kn · en · hi · te · ta
+  src/components/ui/          shadcn/ui components (owned, tuned for touch)
+  src/components/RegisterGrid AG Grid office register (desktop, lazy-loaded)
   src/components/stages/      VA, RI, DT and operator work panels
   src/pages/                  queue, all files, application, new, impact, certificate
 ```
