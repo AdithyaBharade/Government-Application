@@ -5,7 +5,7 @@ import { formatDateTime, personName } from '../lib/format';
 
 const ICON = {
   CREATED: { icon: FilePlus2, tone: 'bg-brand-50 text-brand-700' },
-  DOCUMENT_UPLOADED: { icon: Paperclip, tone: 'bg-canvas text-muted' },
+  DOCUMENT_UPLOADED: { icon: Paperclip, tone: 'bg-muted text-muted-foreground' },
   AI_ASSIST: { icon: Sparkles, tone: 'bg-ai-50 text-ai-600' },
   FORWARDED: { icon: Send, tone: 'bg-brand-50 text-brand-700' },
   RETURNED: { icon: RotateCcw, tone: 'bg-amber-50 text-amber-800' },
@@ -39,21 +39,21 @@ export function Timeline({ events }: { events: AuditEvent[] }) {
         const agreed = e.meta?.agreedWithAi;
         return (
           <li key={e.id} className="relative flex gap-3 pb-4">
-            {idx < arr.length - 1 && <span className="absolute top-8 bottom-0 left-4 w-px bg-line" aria-hidden />}
+            {idx < arr.length - 1 && <span className="absolute top-8 bottom-0 left-4 w-px bg-border" aria-hidden />}
             <span className={`relative grid size-8 shrink-0 place-items-center rounded-full ${tone}`}>
               <Icon size={15} aria-hidden />
             </span>
             <div className="min-w-0 flex-1 pt-1">
               <p className="text-sm font-medium">{label(e)}</p>
-              <p className="text-xs text-muted">
+              <p className="text-xs text-muted-foreground">
                 {e.actor ? `${personName(e.actor)} · ${t(`rolesShort.${e.actor.role}`)} · ` : ''}
                 {formatDateTime(e.createdAt)}
               </p>
               {e.comment && e.action !== 'AI_ASSIST' && (
-                <p className="mt-1.5 rounded-lg bg-canvas px-3 py-2 text-sm whitespace-pre-line">{e.comment}</p>
+                <p className="mt-1.5 rounded-lg bg-muted px-3 py-2 text-sm whitespace-pre-line">{e.comment}</p>
               )}
               {agreed !== undefined && (
-                <p className={`mt-1 text-xs font-medium ${agreed ? 'text-muted' : 'text-ai-700'}`}>
+                <p className={`mt-1 text-xs font-medium ${agreed ? 'text-muted-foreground' : 'text-ai-700'}`}>
                   <Sparkles size={11} className="mr-1 inline" aria-hidden />
                   {agreed ? t('history.agreed') : t('history.differed', { s: t(`ai.decisions.${String(e.meta?.aiSuggestedDecision)}`) })}
                 </p>

@@ -1,10 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Sparkles, ThumbsDown } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { errorCode, errorMessage } from '../api/client';
 import { sendAiFeedback } from '../api/hooks';
 import type { AiFeedback, AiRun, CheckStatus } from '../api/types';
-import { Spinner } from './ui';
+import { Spinner } from './common';
 
 interface Props {
   title: string;
@@ -27,43 +31,53 @@ export function AiBox({ title, desc, run, pending, error, onRun, disabled, child
   const isDismissed = run && (dismissed === run.id || run.feedback === 'DISMISSED');
 
   return (
-    <section className="rounded-xl border border-ai-100 bg-ai-50/60">
+    <section className="overflow-hidden rounded-xl border border-ai-100 bg-ai-50/60">
       <header className="flex flex-wrap items-center gap-3 px-4 py-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-ai-600 text-white">
-          <Sparkles size={17} aria-hidden />
+          <Sparkles className="size-[17px]" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-ai-700">{title}</h3>
-          <p className="text-xs text-muted">{desc}</p>
+          <p className="text-xs text-muted-foreground">{desc}</p>
         </div>
-        <button className={run ? 'btn-secondary min-h-9 px-3' : 'btn-ai'} onClick={onRun} disabled={pending || disabled}>
-          {pending ? <Spinner label={t('ai.running')} /> : run ? <><RefreshCw size={14} aria-hidden /> {t('ai.rerun')}</> : <><Sparkles size={15} aria-hidden /> {t('ai.label')}</>}
-        </button>
+        <Button variant={run ? 'outline' : 'ai'} size={run ? 'sm' : 'default'} onClick={onRun} disabled={pending || disabled}>
+          {pending ? (
+            <Spinner label={t('ai.running')} />
+          ) : run ? (
+            <><RefreshCw aria-hidden /> {t('ai.rerun')}</>
+          ) : (
+            <><Sparkles aria-hidden /> {t('ai.label')}</>
+          )}
+        </Button>
       </header>
 
       {Boolean(error) && !pending && (
-        <p className="mx-4 mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" role="alert">
-          {errorCode(error) === 'AI_UNAVAILABLE' || errorMessage(error) === 'NETWORK' ? t('ai.unavailable') : errorMessage(error)}
-        </p>
+        <Alert className="mx-4 mb-3 w-auto border-amber-200 bg-amber-50 text-amber-900">
+          <AlertDescription className="text-amber-900">
+            {errorCode(error) === 'AI_UNAVAILABLE' || errorMessage(error) === 'NETWORK' ? t('ai.unavailable') : errorMessage(error)}
+          </AlertDescription>
+        </Alert>
       )}
 
       {run && !pending && (
-        <div className={`border-t border-ai-100 bg-white px-4 py-3 ${isDismissed ? 'opacity-50' : ''}`}>
+        <div className={cn('border-t border-ai-100 bg-card px-4 py-3', isDismissed && 'opacity-50')}>
           {children}
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
-            <p className="text-xs text-muted">{t('ai.disclaimer')}</p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-2">
+            <p className="text-xs text-muted-foreground">{t('ai.disclaimer')}</p>
             {isDismissed ? (
-              <span className="text-xs text-muted">{t('ai.dismissed')}</span>
+              <span className="text-xs text-muted-foreground">{t('ai.dismissed')}</span>
             ) : (
-              <button
-                className="inline-flex items-center gap-1 text-xs font-medium text-muted hover:text-ink"
+              <Button
+                variant="ghost"
+                size="xs"
+                className="text-muted-foreground"
                 onClick={() => {
                   setDismissed(run.id);
                   void sendAiFeedback(run.id, 'DISMISSED');
                 }}
               >
-                <ThumbsDown size={13} aria-hidden /> {t('ai.dismiss')}
-              </button>
+                <ThumbsDown aria-hidden /> {t('ai.dismiss')}
+              </Button>
             )}
           </div>
         </div>
@@ -73,15 +87,29 @@ export function AiBox({ title, desc, run, pending, error, onRun, disabled, child
 }
 
 const STATUS_STYLE: Record<CheckStatus, string> = {
-  OK: 'bg-emerald-50 text-emerald-800',
-  MISMATCH: 'bg-red-50 text-red-800',
-  MISSING: 'bg-red-50 text-red-800',
-  UNCLEAR: 'bg-amber-50 text-amber-900',
+  OK: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  MISMATCH: 'border-red-200 bg-red-50 text-red-800',
+  MISSING: 'border-red-200 bg-red-50 text-red-800',
+  UNCLEAR: 'border-amber-200 bg-amber-50 text-amber-900',
 };
 
 export function CheckStatusChip({ status }: { status: CheckStatus }) {
   const { t } = useTranslation();
-  return <span className={`chip ${STATUS_STYLE[status]}`}>{t(`ai.status.${status}`)}</span>;
+  return (
+    <Badge variant="outline" className={STATUS_STYLE[status]}>
+      {t(`ai.status.${status}`)}
+    </Badge>
+  );
+}
+
+/** "Use this" button shared by all AI suggestions. */
+export function UseSuggestionButton({ used, onUse }: { used: boolean; onUse: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Button variant="ai" size="sm" className="mt-2" onClick={onUse}>
+      {used ? t('ai.used') : t('ai.use')}
+    </Button>
+  );
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mic, Square } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { LANGUAGES } from '../i18n';
 
 // Minimal typing for the Web Speech API (Chrome on Android supports kn-IN, hi-IN, te-IN, ta-IN)
@@ -49,9 +50,9 @@ export function VoiceButton({ onText }: { onText: (text: string) => void }) {
   }
 
   return (
-    <button type="button" onClick={toggle} className={listening ? 'btn-danger min-h-9 px-3' : 'btn-secondary min-h-9 px-3'}>
-      {listening ? <Square size={14} aria-hidden /> : <Mic size={15} aria-hidden />}
+    <Button type="button" size="sm" variant={listening ? 'danger' : 'outline'} onClick={toggle} aria-pressed={listening}>
+      {listening ? <Square aria-hidden /> : <Mic aria-hidden />}
       {listening ? t('common.listening') : t('common.voice')}
-    </button>
+    </Button>
   );
 }

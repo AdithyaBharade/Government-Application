@@ -1,6 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, FilePlus2, Files, Inbox, LogOut } from 'lucide-react';
+import { BarChart3, ChevronDown, FilePlus2, Files, Inbox, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { personName } from '../lib/format';
@@ -12,9 +23,9 @@ export function Layout() {
 
   const links = [
     { to: '/', label: t('nav.queue'), icon: Inbox, end: true },
-    { to: '/applications', label: t('nav.all'), icon: Files },
-    ...(user.role === 'OPERATOR' ? [{ to: '/applications/new', label: t('nav.new'), icon: FilePlus2 }] : []),
-    { to: '/insights', label: t('nav.insights'), icon: BarChart3 },
+    { to: '/applications', label: t('nav.all'), icon: Files, end: true },
+    ...(user.role === 'OPERATOR' ? [{ to: '/applications/new', label: t('nav.new'), icon: FilePlus2, end: true }] : []),
+    { to: '/insights', label: t('nav.insights'), icon: BarChart3, end: true },
   ];
 
   return (
@@ -25,7 +36,7 @@ export function Layout() {
             <span className="grid size-9 place-items-center rounded-lg bg-white/15 text-lg font-bold">ಕ</span>
             <span className="leading-tight">
               <span className="block font-semibold">{t('app.name')}</span>
-              <span className="block text-xs text-white/70">{t('app.tagline')}</span>
+              <span className="hidden text-xs text-white/70 sm:block">{t('app.tagline')}</span>
             </span>
           </NavLink>
 
@@ -36,7 +47,7 @@ export function Layout() {
                 to={l.to}
                 end={l.end}
                 className={({ isActive }) =>
-                  `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-white/15 text-white' : 'text-white/75 hover:text-white'}`
+                  cn('rounded-lg px-3 py-2 text-sm font-medium', isActive ? 'bg-white/15 text-white' : 'text-white/75 hover:text-white')
                 }
               >
                 {l.label}
@@ -46,14 +57,29 @@ export function Layout() {
 
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher tone="dark" />
-            <div className="hidden text-right text-xs leading-tight sm:block">
-              <div className="font-semibold">{personName(user)}</div>
-              <div className="text-white/70">{t(`roles.${user.role}`)}</div>
-            </div>
-            <button onClick={logout} className="grid size-10 place-items-center rounded-lg hover:bg-white/10" title={t('nav.logout')}>
-              <LogOut size={18} />
-              <span className="sr-only">{t('nav.logout')}</span>
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="ghost" className="h-10 gap-2 px-2 text-white hover:bg-white/10 hover:text-white" />}>
+                <span className="grid size-8 place-items-center rounded-full bg-white/20 text-sm font-semibold">{user.name.charAt(0)}</span>
+                <span className="hidden text-left text-xs leading-tight sm:block">
+                  <span className="block font-semibold">{personName(user)}</span>
+                  <span className="block text-white/70">{t(`rolesShort.${user.role}`)}</span>
+                </span>
+                <ChevronDown className="size-4 text-white/70" aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>
+                    <div className="font-semibold text-foreground">{personName(user)}</div>
+                    <div className="text-xs font-normal">{t(`roles.${user.role}`)}</div>
+                    <div className="text-xs font-normal">{user.office}</div>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onClick={logout}>
+                  <LogOut aria-hidden /> {t('nav.logout')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -63,14 +89,18 @@ export function Layout() {
       </main>
 
       {/* Bottom navigation for phones – field officers mostly use mobiles */}
-      <nav className="no-print fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-white md:hidden" style={{ gridTemplateColumns: `repeat(${links.length}, 1fr)` }} aria-label="Main">
+      <nav
+        className="no-print fixed inset-x-0 bottom-0 z-30 grid border-t bg-card md:hidden"
+        style={{ gridTemplateColumns: `repeat(${links.length}, 1fr)` }}
+        aria-label="Main"
+      >
         {links.map((l) => (
           <NavLink
             key={l.to}
             to={l.to}
             end={l.end}
             className={({ isActive }) =>
-              `flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium ${isActive ? 'text-brand-700' : 'text-muted'}`
+              cn('flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium', isActive ? 'text-primary' : 'text-muted-foreground')
             }
           >
             <l.icon size={20} aria-hidden />

@@ -1,26 +1,29 @@
 import { Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { LANGUAGES } from '../i18n';
+
+const ITEMS = LANGUAGES.map((l) => ({ value: l.code, label: l.label }));
 
 export function LanguageSwitcher({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
   const { t, i18n } = useTranslation();
   return (
-    <label className={`relative inline-flex items-center gap-1.5 ${tone === 'dark' ? 'text-white' : 'text-ink'}`}>
-      <Languages size={18} aria-hidden />
-      <span className="sr-only">{t('nav.language')}</span>
-      <select
-        value={i18n.language}
-        onChange={(e) => i18n.changeLanguage(e.target.value)}
-        className={`min-h-10 cursor-pointer rounded-lg border px-2 text-sm font-medium outline-none ${
-          tone === 'dark' ? 'border-white/25 bg-white/10 text-white [&>option]:text-ink' : 'border-line bg-white'
-        }`}
+    <Select items={ITEMS} value={i18n.language} onValueChange={(v) => v && i18n.changeLanguage(String(v))}>
+      <SelectTrigger
+        aria-label={t('nav.language')}
+        className={cn('min-w-28', tone === 'dark' && 'border-white/25 bg-white/10 text-white hover:bg-white/15 [&_svg]:text-white/80')}
       >
-        {LANGUAGES.map((l) => (
-          <option key={l.code} value={l.code}>
+        <Languages aria-hidden />
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {ITEMS.map((l) => (
+          <SelectItem key={l.value} value={l.value}>
             {l.label}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-    </label>
+      </SelectContent>
+    </Select>
   );
 }
