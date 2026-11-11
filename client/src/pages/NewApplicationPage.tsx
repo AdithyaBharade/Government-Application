@@ -2,11 +2,18 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { FilePlus2, Paperclip } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api, errorMessage } from '../api/client';
 import type { DocType } from '../api/types';
 import { rupees } from '../lib/format';
-import { Spinner } from '../components/ui';
+import { Spinner } from '../components/common';
 
 const DOC_SLOTS: DocType[] = ['AADHAAR', 'RATION_CARD', 'SELF_DECLARATION', 'SALARY_CERTIFICATE', 'RTC', 'OTHER'];
 
@@ -34,13 +41,15 @@ const EMPTY = {
 
 type FormState = typeof EMPTY;
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <fieldset className="card p-4">
-      <legend className="sr-only">{title}</legend>
-      <h2 className="mb-3 font-semibold">{title}</h2>
-      <div className="grid gap-3 sm:grid-cols-2">{children}</div>
-    </fieldset>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-2">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -57,12 +66,17 @@ export function NewApplicationPage() {
   const set = (k: keyof FormState) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value });
   const num = (v: string) => Number(v.replace(/\D/g, '') || 0);
   const total = useMemo(() => num(form.agriculture) + num(form.salary) + num(form.business) + num(form.other), [form]);
+  const genders = [
+    { value: 'M', label: t('fields.genderM') },
+    { value: 'F', label: t('fields.genderF') },
+    { value: 'O', label: t('fields.genderO') },
+  ];
 
-  const input = (k: keyof FormState, opts: { type?: string; inputMode?: 'numeric' | 'tel'; required?: boolean; label?: string } = {}) => (
-    <label className="block">
-      <span className="label">{opts.label ?? t(`fields.${k}`)}</span>
-      <input className="input" type={opts.type ?? 'text'} inputMode={opts.inputMode} value={form[k]} onChange={set(k)} required={opts.required ?? true} />
-    </label>
+  const field = (k: keyof FormState, opts: { type?: string; inputMode?: 'numeric' | 'tel'; required?: boolean; label?: string } = {}) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={`f-${k}`}>{opts.label ?? t(`fields.${k}`)}</Label>
+      <Input id={`f-${k}`} type={opts.type ?? 'text'} inputMode={opts.inputMode} value={form[k]} onChange={set(k)} required={opts.required ?? true} />
+    </div>
   );
 
   async function submit(e: FormEvent) {
@@ -96,6 +110,7 @@ export function NewApplicationPage() {
         await api.post(`/applications/${data.id}/documents`, fd);
       }
       qc.invalidateQueries();
+      toast.success(t('newApp.success', { appNo: data.appNo }));
       navigate(`/applications/${data.id}`, { replace: true });
     } catch (err) {
       const msg = errorMessage(err);
@@ -108,42 +123,47 @@ export function NewApplicationPage() {
   return (
     <form onSubmit={submit} className="mx-auto max-w-3xl space-y-4">
       <h1 className="flex items-center gap-2 text-xl font-bold">
-        <FilePlus2 size={22} className="text-brand-600" aria-hidden /> {t('newApp.title')}
+        <FilePlus2 className="size-[22px] text-brand-600" aria-hidden /> {t('newApp.title')}
       </h1>
 
       <Section title={t('newApp.applicant')}>
-        {input('applicantName')}
-        {input('applicantNameLocal', { required: false })}
-        {input('relationName')}
-        <label className="block">
-          <span className="label">{t('fields.gender')}</span>
-          <select className="input" value={form.gender} onChange={set('gender')}>
-            <option value="M">{t('fields.genderM')}</option>
-            <option value="F">{t('fields.genderF')}</option>
-            <option value="O">{t('fields.genderO')}</option>
-          </select>
-        </label>
-        {input('mobile', { type: 'tel', inputMode: 'tel' })}
-        {input('aadhaarLast4', { inputMode: 'numeric' })}
-        {input('occupation')}
-        {input('purpose')}
-        {input('familySize', { inputMode: 'numeric' })}
+        {field('applicantName')}
+        {field('applicantNameLocal', { required: false })}
+        {field('relationName')}
+        <div className="space-y-1.5">
+          <Label>{t('fields.gender')}</Label>
+          <Select items={genders} value={form.gender} onValueChange={(v) => v && setForm({ ...form, gender: String(v) })}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {genders.map((g) => (
+                <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {field('mobile', { type: 'tel', inputMode: 'tel' })}
+        {field('aadhaarLast4', { inputMode: 'numeric' })}
+        {field('occupation')}
+        {field('purpose')}
+        {field('familySize', { inputMode: 'numeric' })}
       </Section>
 
       <Section title={t('newApp.address')}>
-        {input('address')}
-        {input('village')}
-        {input('hobli')}
-        {input('taluk')}
-        {input('district')}
+        {field('address')}
+        {field('village')}
+        {field('hobli')}
+        {field('taluk')}
+        {field('district')}
       </Section>
 
       <Section title={t('newApp.income')}>
-        {input('agriculture', { inputMode: 'numeric', label: `${t('fields.agriculture')} (₹)` })}
-        {input('salary', { inputMode: 'numeric', label: `${t('fields.salary')} (₹)` })}
-        {input('business', { inputMode: 'numeric', label: `${t('fields.business')} (₹)` })}
-        {input('other', { inputMode: 'numeric', label: `${t('fields.other')} (₹)` })}
-        {input('landAcres', { inputMode: 'numeric', required: false })}
+        {field('agriculture', { inputMode: 'numeric', label: `${t('fields.agriculture')} (₹)` })}
+        {field('salary', { inputMode: 'numeric', label: `${t('fields.salary')} (₹)` })}
+        {field('business', { inputMode: 'numeric', label: `${t('fields.business')} (₹)` })}
+        {field('other', { inputMode: 'numeric', label: `${t('fields.other')} (₹)` })}
+        {field('landAcres', { inputMode: 'numeric', required: false })}
         <div className="flex items-end">
           <p className="w-full rounded-lg bg-brand-50 px-3 py-2.5 font-semibold text-brand-700">
             {t('fields.total')}: {rupees(total)}
@@ -151,36 +171,36 @@ export function NewApplicationPage() {
         </div>
       </Section>
 
-      <fieldset className="card p-4">
-        <h2 className="mb-1 font-semibold">{t('newApp.documents')}</h2>
-        <p className="mb-3 text-sm text-muted">{t('newApp.docsHint')}</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {DOC_SLOTS.map((type) => (
-            <label key={type} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-dashed border-line px-3 py-2 hover:border-brand-500">
-              <Paperclip size={16} className="shrink-0 text-muted" aria-hidden />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{t(`docs.types.${type}`)}</span>
-                <span className="block truncate text-xs text-muted">{files[type]?.name ?? t('docs.hint')}</span>
-              </span>
-              <input
-                type="file"
-                accept="application/pdf,image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  setFiles((prev) => ({ ...prev, [type]: f }));
-                }}
-              />
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <Section title={t('newApp.documents')} description={t('newApp.docsHint')}>
+        {DOC_SLOTS.map((type) => (
+          <label key={type} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-dashed px-3 py-2 hover:border-brand-500 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50">
+            <Paperclip className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium">{t(`docs.types.${type}`)}</span>
+              <span className="block truncate text-xs text-muted-foreground">{files[type]?.name ?? t('docs.hint')}</span>
+            </span>
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                setFiles((prev) => ({ ...prev, [type]: f }));
+              }}
+            />
+          </label>
+        ))}
+      </Section>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{error}</p>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <button type="submit" className="btn-primary w-full" disabled={busy}>
+      <Button type="submit" size="lg" className="w-full" disabled={busy}>
         {busy ? <Spinner label={t('newApp.submitting')} /> : t('newApp.submit')}
-      </button>
+      </Button>
     </form>
   );
 }

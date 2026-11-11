@@ -2,8 +2,14 @@ import { useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogIn } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '../context/AuthContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { Spinner } from '../components/common';
 import { errorMessage } from '../api/client';
 import type { Role } from '../api/types';
 
@@ -31,8 +37,7 @@ export function LoginPage() {
     try {
       await login(username.trim().toLowerCase(), password);
     } catch (err) {
-      const msg = errorMessage(err);
-      setError(msg === 'NETWORK' ? t('common.network') : t('login.error'));
+      setError(errorMessage(err) === 'NETWORK' ? t('common.network') : t('login.error'));
     } finally {
       setBusy(false);
     }
@@ -51,41 +56,51 @@ export function LoginPage() {
             <p className="mt-1 text-sm text-white/75">{t('login.subtitle')}</p>
           </div>
 
-          <form onSubmit={submit} className="card space-y-4 p-6 shadow-xl">
-            <h2 className="text-lg font-semibold">{t('login.title')}</h2>
-            <div>
-              <label className="label" htmlFor="username">{t('login.username')}</label>
-              <input id="username" className="input" autoComplete="username" autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value)} required />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">{t('login.password')}</label>
-              <input id="password" type="password" className="input" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-            {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{error}</p>}
-            <button type="submit" className="btn-primary w-full" disabled={busy}>
-              <LogIn size={18} aria-hidden /> {t('login.submit')}
-            </button>
-
-            <div className="border-t border-line pt-4">
-              <p className="mb-2 text-xs text-muted">{t('login.demo')}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {DEMO.map((d) => (
-                  <button
-                    key={d.username}
-                    type="button"
-                    onClick={() => {
-                      setUsername(d.username);
-                      setPassword('Demo@123');
-                    }}
-                    className="rounded-lg border border-line px-3 py-2 text-left text-sm hover:border-brand-500 hover:bg-brand-50"
-                  >
-                    <span className="block font-semibold">{d.username}</span>
-                    <span className="block text-xs text-muted">{t(`roles.${d.role}`)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </form>
+          <Card className="shadow-xl">
+            <form onSubmit={submit} className="contents">
+              <CardHeader>
+                <CardTitle className="text-lg">{t('login.title')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="username">{t('login.username')}</Label>
+                  <Input id="username" autoComplete="username" autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value)} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">{t('login.password')}</Label>
+                  <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <Button type="submit" size="lg" className="w-full" disabled={busy}>
+                  {busy ? <Spinner /> : <LogIn aria-hidden />} {t('login.submit')}
+                </Button>
+              </CardContent>
+              <CardFooter className="flex-col items-stretch gap-2 border-t">
+                <CardDescription className="text-xs">{t('login.demo')}</CardDescription>
+                <div className="grid grid-cols-2 gap-2">
+                  {DEMO.map((d) => (
+                    <Button
+                      key={d.username}
+                      type="button"
+                      variant="outline"
+                      className="h-auto flex-col items-start gap-0 py-2 text-left whitespace-normal"
+                      onClick={() => {
+                        setUsername(d.username);
+                        setPassword('Demo@123');
+                      }}
+                    >
+                      <span className="font-semibold">{d.username}</span>
+                      <span className="text-xs font-normal text-muted-foreground">{t(`roles.${d.role}`)}</span>
+                    </Button>
+                  ))}
+                </div>
+              </CardFooter>
+            </form>
+          </Card>
         </div>
       </div>
     </div>

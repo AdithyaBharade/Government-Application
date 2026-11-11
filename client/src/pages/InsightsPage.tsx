@@ -4,18 +4,21 @@ import { BarChart3, Info, Sparkles } from 'lucide-react';
 import { useInsights } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import type { AiKind, Insights, Stage } from '../api/types';
-import { Card, ErrorState, PageLoader } from '../components/ui';
+import { Card, CardContent } from '@/components/ui/card';
+import { ErrorState, PageLoader, Panel } from '../components/common';
 
 // Categorical slots 1 & 2 – validated for colour-blind separation (ΔE 24.7) and 3:1 contrast on white
 const SERIES = { received: '#2a78d6', decided: '#eb6834' };
 
 function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="card p-4">
-      <div className="text-xs font-medium text-muted">{label}</div>
-      <div className="mt-1 text-3xl leading-none font-bold tabular-nums">{value}</div>
-      {sub && <div className="mt-1 text-xs text-muted">{sub}</div>}
-    </div>
+    <Card size="sm">
+      <CardContent>
+        <div className="text-xs font-medium text-muted-foreground">{label}</div>
+        <div className="mt-1 text-3xl leading-none font-bold tabular-nums">{value}</div>
+        {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -34,7 +37,7 @@ function DeskDays({ data }: { data: Insights['avgDaysAtStage'] }) {
             <span>{t(`stages.${r.stage}`)}</span>
             <span className="font-semibold tabular-nums">{r.days} {t('common.days')}</span>
           </div>
-          <div className="h-3 rounded bg-canvas">
+          <div className="h-3 rounded bg-muted">
             <div className="h-3 rounded" style={{ width: `${(r.days / max) * 100}%`, background: SERIES.received }} title={`${r.days}`} />
           </div>
         </li>
@@ -106,7 +109,7 @@ function WeeklyChart({ weeks }: { weeks: Insights['weeks'] }) {
         </svg>
         {active !== null && (
           <div
-            className="pointer-events-none absolute top-0 rounded-lg border border-line bg-white px-3 py-2 text-xs shadow-md"
+            className="pointer-events-none absolute top-0 rounded-lg border bg-popover px-3 py-2 text-xs shadow-md"
             style={{ left: `${((L + active * gw + gw / 2) / W) * 100}%`, transform: 'translateX(-50%)' }}
           >
             <div className="mb-1 font-semibold">{label(weeks[active].weekEnding)}</div>
@@ -120,10 +123,10 @@ function WeeklyChart({ weeks }: { weeks: Insights['weeks'] }) {
         )}
       </div>
       <details className="mt-2 text-sm">
-        <summary className="cursor-pointer text-muted">Table</summary>
+        <summary className="cursor-pointer text-muted-foreground">Table</summary>
         <table className="mt-2 w-full">
           <thead>
-            <tr className="text-left text-xs text-muted">
+            <tr className="text-left text-xs text-muted-foreground">
               <th className="py-1">Week</th>
               <th className="py-1 text-right">{t('insights.received')}</th>
               <th className="py-1 text-right">{t('insights.decided')}</th>
@@ -131,7 +134,7 @@ function WeeklyChart({ weeks }: { weeks: Insights['weeks'] }) {
           </thead>
           <tbody>
             {weeks.map((w) => (
-              <tr key={w.weekEnding} className="border-t border-line">
+              <tr key={w.weekEnding} className="border-t border-border">
                 <td className="py-1">{label(w.weekEnding)}</td>
                 <td className="py-1 text-right tabular-nums">{w.received}</td>
                 <td className="py-1 text-right tabular-nums">{w.decided}</td>
@@ -158,7 +161,7 @@ export function InsightsPage() {
         <h1 className="flex items-center gap-2 text-xl font-bold">
           <BarChart3 size={22} className="text-brand-600" aria-hidden /> {t('insights.title')}
         </h1>
-        <p className="text-sm text-muted">{t('insights.subtitle')}</p>
+        <p className="text-sm text-muted-foreground">{t('insights.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -169,29 +172,29 @@ export function InsightsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title={t('insights.weekly')}>
+        <Panel title={t('insights.weekly')}>
           <WeeklyChart weeks={data.weeks} />
-        </Card>
-        <Card title={t('insights.perStage')}>
+        </Panel>
+        <Panel title={t('insights.perStage')}>
           <DeskDays data={data.avgDaysAtStage} />
-        </Card>
+        </Panel>
       </div>
 
-      <Card title={t('insights.aiTable')} icon={<Sparkles size={16} className="text-ai-600" aria-hidden />}>
+      <Panel title={t('insights.aiTable')} icon={<Sparkles className="size-4 text-ai-600" aria-hidden />}>
         <div className="mb-4 grid grid-cols-2 gap-3">
           <div>
-            <div className="text-xs text-muted">{t('insights.aiUseful')}</div>
+            <div className="text-xs text-muted-foreground">{t('insights.aiUseful')}</div>
             <div className="text-2xl font-bold tabular-nums">{pct(data.ai.usefulPct)}</div>
           </div>
           <div>
-            <div className="text-xs text-muted">{t('insights.aiAgreement')}</div>
+            <div className="text-xs text-muted-foreground">{t('insights.aiAgreement')}</div>
             <div className="text-2xl font-bold tabular-nums">{pct(data.ai.decisionAgreementPct)}</div>
           </div>
         </div>
         <div className="-mx-4 overflow-x-auto px-4">
           <table className="w-full min-w-[520px] text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted">
+              <tr className="text-left text-xs text-muted-foreground">
                 <th className="py-2 font-medium" />
                 <th className="py-2 text-right font-medium">{t('insights.runs')}</th>
                 <th className="py-2 text-right font-medium">{t('insights.accepted')}</th>
@@ -204,7 +207,7 @@ export function InsightsPage() {
               {kinds.map((k) => {
                 const row = data.ai.byKind[k];
                 return (
-                  <tr key={k} className="border-t border-line">
+                  <tr key={k} className="border-t border-border">
                     <td className="py-2 font-medium">{t(`ai.kinds.${k}`)}</td>
                     <td className="py-2 text-right tabular-nums">{row?.runs ?? 0}</td>
                     <td className="py-2 text-right tabular-nums">{row?.accepted ?? 0}</td>
@@ -217,9 +220,9 @@ export function InsightsPage() {
             </tbody>
           </table>
         </div>
-      </Card>
+      </Panel>
 
-      <section className="card flex gap-3 bg-brand-50 p-4">
+      <section className="flex gap-3 rounded-xl bg-brand-50 p-4 ring-1 ring-brand-100">
         <Info className="mt-0.5 shrink-0 text-brand-700" size={18} aria-hidden />
         <div>
           <h2 className="font-semibold text-brand-700">{t('insights.how')}</h2>

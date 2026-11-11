@@ -11,7 +11,8 @@ import { DocumentsCard } from '../components/DocumentsCard';
 import { FlagChips, SlaBadge, StageBadge } from '../components/badges';
 import { Stepper } from '../components/Stepper';
 import { Timeline } from '../components/Timeline';
-import { Card, ErrorState, PageLoader } from '../components/ui';
+import { Card, CardContent } from '@/components/ui/card';
+import { ErrorState, PageLoader, Panel } from '../components/common';
 import { VaPanel } from '../components/stages/VaPanel';
 import { RiPanel } from '../components/stages/RiPanel';
 import { DtPanel } from '../components/stages/DtPanel';
@@ -52,11 +53,12 @@ export function ApplicationPage() {
         <ArrowLeft size={16} aria-hidden /> {t('common.back')}
       </Link>
 
-      <header className="card space-y-4 p-4">
+      <Card>
+        <CardContent className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold">{showLocalName ? app.applicantNameLocal : app.applicantName}</h1>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               {showLocalName && <>{app.applicantName} · </>}
               {app.appNo} · {app.village} · {t('fields.dueOn')}: {formatDate(app.dueAt)}
             </p>
@@ -68,7 +70,8 @@ export function ApplicationPage() {
           </div>
         </div>
         <Stepper stage={app.stage} />
-      </header>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
@@ -78,9 +81,9 @@ export function ApplicationPage() {
           <ApplicantCard app={app} />
         </div>
         <aside>
-          <Card title={t('history.title')} icon={<History size={16} aria-hidden />} className="lg:sticky lg:top-20">
+          <Panel title={t('history.title')} icon={<History className="size-4" aria-hidden />} className="lg:sticky lg:top-20">
             <Timeline events={app.events} />
-          </Card>
+          </Panel>
         </aside>
       </div>
     </div>
