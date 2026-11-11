@@ -65,7 +65,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
-        <Card className="gap-0 py-0">
+        <Card className="h-fit gap-0 py-0">
           <CardHeader className="border-b py-3">
             <CardTitle>{t('dashboard.attention')}</CardTitle>
             <CardDescription>{t('dashboard.subtitle')}</CardDescription>

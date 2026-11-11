@@ -58,7 +58,7 @@ export function Layout() {
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher tone="dark" />
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" className="h-10 gap-2 px-2 text-white hover:bg-white/10 hover:text-white" />}>
+              <DropdownMenuTrigger render={<Button variant="ghost" className="h-10 gap-2 px-2 text-white hover:bg-white/10 hover:text-white aria-expanded:bg-white/15 aria-expanded:text-white data-popup-open:bg-white/15 data-popup-open:text-white" />}>
                 <span className="grid size-8 place-items-center rounded-full bg-white/20 text-sm font-semibold">{user.name.charAt(0)}</span>
                 <span className="hidden text-left text-xs leading-tight sm:block">
                   <span className="block font-semibold">{personName(user)}</span>
