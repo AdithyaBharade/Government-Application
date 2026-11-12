@@ -32,3 +32,10 @@ export function createApp() {
   app.use(errorHandler);
   return app;
 }
+
+/**
+ * Vercel's Express preset uses src/app.ts as the function entrypoint (it is checked before
+ * src/index.ts) and expects the Express app as the default export.
+ */
+const app = createApp();
+export default app;

@@ -1,10 +1,7 @@
-import { createApp } from './app';
+import app from './app';
 import { aiEnabled, env, r2Enabled } from './config/env';
 
-const app = createApp();
-
-// On Vercel the app runs as a serverless function: Vercel imports the default export and
-// routes requests to it, so we must not open a port. Everywhere else (local, Render) listen.
+// On Vercel, src/app.ts is the entrypoint and this file is not used. Locally and on Render, listen.
 if (!process.env.VERCEL) {
   app.listen(env.PORT, () => {
     console.log(`Kadata API on :${env.PORT} | AI: ${aiEnabled ? env.GEMINI_MODEL : 'off'} | storage: ${r2Enabled ? 'R2' : 'PostgreSQL'}`);
