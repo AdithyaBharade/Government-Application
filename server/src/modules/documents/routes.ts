@@ -15,7 +15,7 @@ documentsRouter.use(requireAuth);
 const ALLOWED = /^(image\/(png|jpe?g|webp|heic|heif)|application\/pdf)$/;
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 4 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => cb(null, ALLOWED.test(file.mimetype)),
 });
 
@@ -37,7 +37,7 @@ documentsRouter.post(
   asyncHandler(async (req, res) => {
     const user = currentUser(req);
     const { type, replaceDocumentId } = typeSchema.parse(req.body);
-    if (!req.file) throw badRequest('Attach a PDF or photo (max 5 MB)');
+    if (!req.file) throw badRequest('Attach a PDF or photo (max 4 MB)');
 
     const app = await prisma.application.findUnique({ where: { id: req.params.id }, select: { id: true, stage: true } });
     if (!app) throw notFound('Application');

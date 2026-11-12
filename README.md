@@ -6,8 +6,8 @@
 
 | | |
 |---|---|
-| **Live app** | `<add Vercel URL>` |
-| **API** | `<add Render URL>/api/health` |
+| **Live app** | https://government-application-e3at.vercel.app |
+| **API** | https://government-application-virid.vercel.app/api/health |
 | **Demo logins** | `operator`, `va`, `ri` and `dt`. The password for all four is `Demo@123`. You can also tap a role on the login screen to fill it in. |
 
 > All names, documents and numbers are fictional. Sample documents and certificates are watermarked **SAMPLE / SPECIMEN – DEMO ONLY**.
@@ -171,7 +171,7 @@ Pair this with a 5-question survey of officers and a sample audit of 20 approved
 | AI | **Gemini 3.5 Flash** (automatic fallback to Gemini 3.8 Flash, then one retry, when a model is overloaded) via `@google/genai`, using **structured JSON output with response schemas**, temperature 0.2, PDFs and photos sent inline | Multimodal (reads scans directly), cheap, fast, and the schema means the UI never parses free text. Model is configurable with `GEMINI_MODEL`. |
 | Auth | **JWT** (bcrypt-hashed passwords, 12h expiry, login rate-limited) and role checks on every route | Stateless and simple to deploy. |
 | Documents | **Cloudflare R2** (private bucket, S3 API), with automatic **fallback to PostgreSQL** when R2 isn't configured | Files are never public; they are streamed through the authenticated API. The fallback means the app runs with zero extra setup. |
-| Hosting | **Vercel** (frontend) and **Render** (API), with **Neon** (DB) | Free tiers, Git-based deploys. |
+| Hosting | **Vercel** for both the frontend (static Vite build) and the API (Express as a serverless function), with **Neon** (DB) | Free tiers, Git-based deploys, one platform to operate. Uploads are capped at 4 MB to stay under Vercel's request size limit. A `render.yaml` is included for running the API as a long-lived server instead. |
 
 **Known limitations / next steps:**
 - **Offline drafts** for RIs in no-signal villages (a service worker plus a queued sync).
@@ -185,7 +185,7 @@ Pair this with a 5-question survey of officers and a sample audit of 20 approved
 
 ## 6. Run it locally
 
-**Requirements:** Node 20+ and a PostgreSQL database. A free [Neon](https://neon.tech) database works, or a local Postgres.
+**Requirements:** Node 22 and a PostgreSQL database. A free [Neon](https://neon.tech) database works, or a local Postgres.
 
 ```bash
 # 1. API
@@ -228,7 +228,7 @@ Log in as `va` / `Demo@123` and open the top file in the queue. Then try the sam
 | `CORS_ORIGIN` | | Comma-separated frontend URLs |
 | `SLA_DAYS` | | Sakala time limit in days (default 21) |
 
-Frontend: `VITE_API_URL` is the API origin in production (e.g. `https://kadata-api.onrender.com`). Leave it empty locally.
+Frontend: `VITE_API_URL` is the API origin in production (e.g. `https://government-application-virid.vercel.app`). Leave it empty locally.
 
 ### Project structure
 
