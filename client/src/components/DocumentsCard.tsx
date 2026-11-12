@@ -1,13 +1,25 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Eye, FileText, Image as ImageIcon, Paperclip, Upload } from 'lucide-react';
+import { toast } from 'sonner';
+import { Eye, FileText, Image as ImageIcon, Paperclip, RefreshCw, Trash2, Upload } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { openDocument, useUpload } from '../api/hooks';
+import { openDocument, useRemoveDocument, useUpload } from '../api/hooks';
 import { errorMessage } from '../api/client';
-import type { ApplicationDetail, DocType } from '../api/types';
+import type { ApplicationDetail, DocType, DocumentInfo } from '../api/types';
+import { useAuth } from '../context/AuthContext';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Panel, Spinner } from './common';
 
 const ALL_TYPES: DocType[] = ['AADHAAR', 'RATION_CARD', 'SELF_DECLARATION', 'SALARY_CERTIFICATE', 'RTC', 'FIELD_PHOTO', 'OTHER'];
@@ -18,18 +30,64 @@ export function DocumentsCard({ app, canUpload, defaultType }: { app: Applicatio
   const fileRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState<DocType>(defaultType ?? app.missingDocuments[0] ?? 'OTHER');
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const remove = useRemoveDocument(app.id);
+  const [toRemove, setToRemove] = useState<DocumentInfo | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ file: File; existing: DocumentInfo } | null>(null);
+  // Same rule as the server: you can only remove what you uploaded, while you can still upload here.
+  const canRemove = (d: DocumentInfo) => canUpload && !!user && d.uploadedBy?.id === user.id;
+
+  async function confirmRemove() {
+    if (!toRemove) return;
+    setRemoveError(null);
+    try {
+      await remove.mutateAsync(toRemove.id);
+      toast.success(t('docs.removed', { type: t(`docs.types.${toRemove.type}`) }));
+      setToRemove(null);
+    } catch (err) {
+      setRemoveError(errorMessage(err));
+    }
+  }
   const items = ALL_TYPES.map((d) => ({ value: d, label: t(`docs.types.${d}`) }));
 
-  async function onFile(file: File | undefined) {
-    if (!file) return;
+  async function send(file: File, replaceDocumentId?: string) {
     setError(null);
     try {
-      await upload.mutateAsync({ file, type });
+      await upload.mutateAsync({ file, type, replaceDocumentId });
+      if (replaceDocumentId) toast.success(t('docs.replaced', { type: t(`docs.types.${type}`) }));
     } catch (err) {
       setError(errorMessage(err));
-    } finally {
-      if (fileRef.current) fileRef.current.value = '';
     }
+  }
+
+  /**
+   * Before adding, look for a document this upload would duplicate: same type for the one-per-file
+   * documents, or same file name for "Other"/field photos where several are normal. If the operator
+   * could remove it, ask whether to replace it instead of piling up copies.
+   */
+  function findDuplicate(file: File): DocumentInfo | undefined {
+    const many = type === 'OTHER' || type === 'FIELD_PHOTO';
+    const same = app.documents.filter((d) => d.type === type && (!many || d.originalName === file.name));
+    return same.reverse().find(canRemove); // latest one first
+  }
+
+  async function onFile(file: File | undefined) {
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file) return;
+    const dup = findDuplicate(file);
+    if (dup) {
+      setPending({ file, existing: dup });
+      return;
+    }
+    await send(file);
+  }
+
+  async function resolvePending(choice: 'replace' | 'keep') {
+    if (!pending) return;
+    const { file, existing } = pending;
+    setPending(null);
+    await send(file, choice === 'replace' ? existing.id : undefined);
   }
 
   return (
@@ -61,6 +119,20 @@ export function DocumentsCard({ app, canUpload, defaultType }: { app: Applicatio
                 <Button variant="outline" size="sm" onClick={() => openDocument(d.id)}>
                   <Eye aria-hidden /> {t('docs.view')}
                 </Button>
+                {canRemove(d) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => {
+                      setRemoveError(null);
+                      setToRemove(d);
+                    }}
+                    aria-label={`${t('docs.remove')}: ${t(`docs.types.${d.type}`)} – ${d.originalName}`}
+                  >
+                    <Trash2 aria-hidden /> <span className="max-sm:sr-only">{t('docs.remove')}</span>
+                  </Button>
+                )}
               </li>
             );
           })}
@@ -92,6 +164,48 @@ export function DocumentsCard({ app, canUpload, defaultType }: { app: Applicatio
         </div>
       )}
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+
+      <AlertDialog open={!!pending} onOpenChange={(next) => !next && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('docs.replaceTitle', { type: pending ? t(`docs.types.${pending.existing.type}`) : '' })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending &&
+                t('docs.replaceBody', {
+                  type: t(`docs.types.${pending.existing.type}`),
+                  oldName: pending.existing.originalName,
+                  newName: pending.file.name,
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
+            <Button variant="outline" onClick={() => resolvePending('keep')}>
+              {t('docs.keepBoth')}
+            </Button>
+            <Button onClick={() => resolvePending('replace')} autoFocus>
+              <RefreshCw aria-hidden /> {t('docs.replace')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ConfirmDialog
+        open={!!toRemove}
+        title={t('docs.removeTitle')}
+        confirmLabel={t('docs.remove')}
+        tone="danger"
+        busy={remove.isPending}
+        error={removeError}
+        onConfirm={confirmRemove}
+        onCancel={() => setToRemove(null)}
+      >
+        {toRemove && (
+          <p className="text-sm text-muted-foreground">
+            {t('docs.removeBody', { type: t(`docs.types.${toRemove.type}`), name: toRemove.originalName })}
+          </p>
+        )}
+      </ConfirmDialog>
     </Panel>
   );
 }

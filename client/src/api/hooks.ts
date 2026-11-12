@@ -55,11 +55,22 @@ export function useAction(id: string) {
 export function useUpload(id: string) {
   const invalidate = useInvalidateApp(id);
   return useMutation({
-    mutationFn: async ({ file, type }: { file: File; type: DocType }) => {
+    mutationFn: async ({ file, type, replaceDocumentId }: { file: File; type: DocType; replaceDocumentId?: string }) => {
       const form = new FormData();
       form.append('type', type);
+      if (replaceDocumentId) form.append('replaceDocumentId', replaceDocumentId);
       form.append('file', file);
       return (await api.post(`/applications/${id}/documents`, form)).data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useRemoveDocument(appId: string) {
+  const invalidate = useInvalidateApp(appId);
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      await api.delete(`/documents/${documentId}`);
     },
     onSuccess: invalidate,
   });

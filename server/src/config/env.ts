@@ -6,7 +6,9 @@ const schema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('12h'),
   GEMINI_API_KEY: z.string().optional().default(''),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().trim().transform((v) => v || 'gemini-3.5-flash').default('gemini-3.5-flash'),
+  /** Used when the main model is overloaded (503/429). Empty = no fallback. */
+  GEMINI_FALLBACK_MODEL: z.string().trim().default('gemini-3.8-flash'),
   R2_ACCOUNT_ID: z.string().optional().default(''),
   R2_ACCESS_KEY_ID: z.string().optional().default(''),
   R2_SECRET_ACCESS_KEY: z.string().optional().default(''),

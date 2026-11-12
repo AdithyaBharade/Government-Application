@@ -14,10 +14,20 @@ import { api, errorMessage } from '../api/client';
 import type { DocType } from '../api/types';
 import { rupees } from '../lib/format';
 import { Spinner } from '../components/common';
+import {
+  DIGIT_LIMITS,
+  onlyDecimal,
+  onlyDigits,
+  validateField,
+  validateForm,
+  type ApplicationForm,
+  type FieldKey,
+  type FormErrors,
+} from '../lib/applicationValidation';
 
 const DOC_SLOTS: DocType[] = ['AADHAAR', 'RATION_CARD', 'SELF_DECLARATION', 'SALARY_CERTIFICATE', 'RTC', 'OTHER'];
 
-const EMPTY = {
+const EMPTY: ApplicationForm = {
   applicantName: '',
   applicantNameLocal: '',
   relationName: '',
@@ -39,7 +49,7 @@ const EMPTY = {
   other: '0',
 };
 
-type FormState = typeof EMPTY;
+type FormState = ApplicationForm;
 
 function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
@@ -63,7 +73,28 @@ export function NewApplicationPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: keyof FormState) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
+
+  /** Sanitise as the operator types: digit-only fields drop letters, land allows one decimal point. */
+  const sanitise = (k: FieldKey, v: string) => {
+    if (k in DIGIT_LIMITS) return onlyDigits(v, DIGIT_LIMITS[k]);
+    if (k === 'landAcres') return onlyDecimal(v);
+    return v;
+  };
+
+  const update = (k: FieldKey, raw: string) => {
+    const value = sanitise(k, raw);
+    setForm((prev) => ({ ...prev, [k]: value }));
+    // Once a field has been visited, re-check it live so the error clears as soon as it's fixed
+    if (touched[k]) setErrors((prev) => ({ ...prev, [k]: validateField(k, value) }));
+  };
+
+  const blur = (k: FieldKey) => {
+    setTouched((prev) => ({ ...prev, [k]: true }));
+    setErrors((prev) => ({ ...prev, [k]: validateField(k, form[k]) }));
+  };
+
   const num = (v: string) => Number(v.replace(/\D/g, '') || 0);
   const total = useMemo(() => num(form.agriculture) + num(form.salary) + num(form.business) + num(form.other), [form]);
   const genders = [
@@ -72,15 +103,53 @@ export function NewApplicationPage() {
     { value: 'O', label: t('fields.genderO') },
   ];
 
-  const field = (k: keyof FormState, opts: { type?: string; inputMode?: 'numeric' | 'tel'; required?: boolean; label?: string } = {}) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={`f-${k}`}>{opts.label ?? t(`fields.${k}`)}</Label>
-      <Input id={`f-${k}`} type={opts.type ?? 'text'} inputMode={opts.inputMode} value={form[k]} onChange={set(k)} required={opts.required ?? true} />
-    </div>
-  );
+  const field = (
+    k: FieldKey,
+    opts: { type?: string; inputMode?: 'numeric' | 'decimal' | 'tel'; required?: boolean; label?: string; placeholder?: string } = {},
+  ) => {
+    const err = errors[k];
+    const required = opts.required ?? true;
+    return (
+      <div className="space-y-1.5">
+        <Label htmlFor={`f-${k}`}>
+          {opts.label ?? t(`fields.${k}`)}
+          {required && <span className="text-destructive" aria-hidden> *</span>}
+        </Label>
+        <Input
+          id={`f-${k}`}
+          name={k}
+          type={opts.type ?? 'text'}
+          inputMode={opts.inputMode}
+          placeholder={opts.placeholder}
+          maxLength={DIGIT_LIMITS[k]}
+          autoComplete="off"
+          value={form[k]}
+          onChange={(e) => update(k, e.target.value)}
+          onBlur={() => blur(k)}
+          required={required}
+          aria-invalid={err ? true : undefined}
+          aria-describedby={err ? `f-${k}-err` : undefined}
+        />
+        {err && (
+          <p id={`f-${k}-err`} role="alert" className="text-xs font-medium text-destructive">
+            {t(`validation.${err.key}`, err.values)}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    const found = validateForm(form);
+    setErrors(found);
+    setTouched(Object.fromEntries(Object.keys(form).map((k) => [k, true])));
+    const firstBad = (Object.keys(EMPTY) as FieldKey[]).find((k) => found[k]);
+    if (firstBad) {
+      setError(t('validation.fixErrors'));
+      document.getElementById(`f-${firstBad}`)?.focus();
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -121,7 +190,7 @@ export function NewApplicationPage() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-3xl space-y-4">
+    <form onSubmit={submit} noValidate className="mx-auto max-w-3xl space-y-4">
       <h1 className="flex items-center gap-2 text-xl font-bold">
         <FilePlus2 className="size-[22px] text-brand-600" aria-hidden /> {t('newApp.title')}
       </h1>
@@ -143,8 +212,8 @@ export function NewApplicationPage() {
             </SelectContent>
           </Select>
         </div>
-        {field('mobile', { type: 'tel', inputMode: 'tel' })}
-        {field('aadhaarLast4', { inputMode: 'numeric' })}
+        {field('mobile', { type: 'tel', inputMode: 'numeric', placeholder: '9876543210' })}
+        {field('aadhaarLast4', { inputMode: 'numeric', placeholder: '1234' })}
         {field('occupation')}
         {field('purpose')}
         {field('familySize', { inputMode: 'numeric' })}
@@ -163,7 +232,7 @@ export function NewApplicationPage() {
         {field('salary', { inputMode: 'numeric', label: `${t('fields.salary')} (₹)` })}
         {field('business', { inputMode: 'numeric', label: `${t('fields.business')} (₹)` })}
         {field('other', { inputMode: 'numeric', label: `${t('fields.other')} (₹)` })}
-        {field('landAcres', { inputMode: 'numeric', required: false })}
+        {field('landAcres', { inputMode: 'decimal', required: false, placeholder: '0.00' })}
         <div className="flex items-end">
           <p className="w-full rounded-lg bg-brand-50 px-3 py-2.5 font-semibold text-brand-700">
             {t('fields.total')}: {rupees(total)}

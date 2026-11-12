@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, CheckCircle2, FilePlus2, Paperclip, RotateCcw, Send, Sparkles, XCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle2, FilePlus2, Paperclip, RotateCcw, Send, Sparkles, Trash2, XCircle } from 'lucide-react';
 import type { AuditEvent } from '../api/types';
 import { formatDateTime, personName } from '../lib/format';
 
 const ICON = {
   CREATED: { icon: FilePlus2, tone: 'bg-brand-50 text-brand-700' },
   DOCUMENT_UPLOADED: { icon: Paperclip, tone: 'bg-muted text-muted-foreground' },
+  DOCUMENT_REMOVED: { icon: Trash2, tone: 'bg-muted text-muted-foreground' },
   AI_ASSIST: { icon: Sparkles, tone: 'bg-ai-50 text-ai-600' },
   FORWARDED: { icon: Send, tone: 'bg-brand-50 text-brand-700' },
   RETURNED: { icon: RotateCcw, tone: 'bg-amber-50 text-amber-800' },
@@ -21,7 +22,8 @@ export function Timeline({ events }: { events: AuditEvent[] }) {
   const label = (e: AuditEvent) => {
     switch (e.action) {
       case 'DOCUMENT_UPLOADED':
-        return t('history.DOCUMENT_UPLOADED', { type: t(`docs.types.${String(e.meta?.type ?? 'OTHER')}`) });
+      case 'DOCUMENT_REMOVED':
+        return t(e.meta?.replacedDocumentId ? 'history.DOCUMENT_REPLACED' : `history.${e.action}`, { type: t(`docs.types.${String(e.meta?.type ?? 'OTHER')}`) });
       case 'AI_ASSIST':
         return t('history.AI_ASSIST', { kind: t(`ai.kinds.${String(e.meta?.kind)}`) });
       case 'FORWARDED':

@@ -22,15 +22,21 @@ const DAY = 86_400_000;
 // ---------------------------------------------------------------------------
 
 const money = z.coerce.number().int().min(0).max(100_000_000);
+const englishName = z
+  .string()
+  .trim()
+  .min(2)
+  .max(100)
+  .regex(/^[A-Za-z][A-Za-z .'-]*$/, 'Use English letters only');
 
 export const createSchema = z.object({
-  applicantName: z.string().trim().min(2).max(100),
+  applicantName: englishName,
   applicantNameLocal: z.string().trim().max(100).optional().or(z.literal('')),
-  relationName: z.string().trim().min(2).max(100),
+  relationName: englishName,
   gender: z.enum(['M', 'F', 'O']),
   dob: z.coerce.date().optional(),
-  mobile: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-  aadhaarLast4: z.string().regex(/^\d{4}$/, 'Enter last 4 digits of Aadhaar'),
+  mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+  aadhaarLast4: z.string().trim().regex(/^\d{4}$/, 'Enter last 4 digits of Aadhaar'),
   address: z.string().trim().min(3).max(300),
   village: z.string().trim().min(2).max(100),
   hobli: z.string().trim().min(2).max(100),
@@ -39,7 +45,12 @@ export const createSchema = z.object({
   occupation: z.string().trim().min(2).max(100),
   purpose: z.string().trim().min(2).max(100),
   incomeSources: z.object({ agriculture: money, salary: money, business: money, other: money }),
-  landAcres: z.coerce.number().min(0).max(1000).optional(),
+  landAcres: z.coerce
+    .number()
+    .min(0)
+    .max(1000)
+    .refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6, 'Up to 2 decimal places')
+    .optional(),
   familySize: z.coerce.number().int().min(1).max(30),
 });
 
@@ -134,7 +145,7 @@ export async function getApplication(id: string, user: AuthUser) {
     where: { id },
     include: {
       documents: {
-        select: { id: true, type: true, originalName: true, mimeType: true, size: true, extracted: true, createdAt: true, uploadedBy: { select: { name: true, role: true } } },
+        select: { id: true, type: true, originalName: true, mimeType: true, size: true, extracted: true, createdAt: true, uploadedBy: { select: { id: true, name: true, role: true } } },
         orderBy: { createdAt: 'asc' },
       },
       reports: { include: { author: { select: { name: true, nameLocal: true, role: true } } }, orderBy: { createdAt: 'asc' } },

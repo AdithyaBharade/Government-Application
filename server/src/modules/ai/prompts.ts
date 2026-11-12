@@ -166,7 +166,8 @@ export interface ReportDraftOutput {
 export function reportDraftPrompt(caseContext: unknown, notes: string): string {
   return [
     'TASK: Turn the Revenue Inspector\'s rough field notes (may be in any language, may be dictated, may be incomplete) into a formal verification report.',
-    'Use ONLY facts present in the notes and the case. Do not invent visits, people or amounts. If the notes do not support a verified income figure, leave verifiedAnnualIncome empty and list what is missing.',
+    'Use ONLY facts present in the notes and the case. Do not invent visits, people or amounts.',
+    'The applicant\'s DECLARED figures are claims, not evidence: never present them as verified. Every amount in verifiedAnnualIncome and incomeBreakdown must come from the RI\'s notes; for any income source the notes do not quantify (e.g. "yield low" with no amount), say so in missingInfo and leave verifiedAnnualIncome empty unless the notes give enough to compute it.',
     '',
     `CASE: ${JSON.stringify(caseContext)}`,
     `FIELD NOTES: """${notes}"""`,

@@ -168,7 +168,7 @@ Pair this with a 5-question survey of officers and a sample audit of 20 approved
 | Consistency | Each action runs in a **DB transaction** using an `updateMany ... where stage = current` guard | Two officers or a double click cannot move a file twice (returns 409). |
 | Database | **PostgreSQL (Neon) + Prisma** | Relational data with a strict audit trail; Prisma gives typed queries. |
 | Audit | An **append-only `AuditEvent` table** plus `StageReport` and `AiRun` tables | History, accountability and impact metrics all come from the same data. |
-| AI | **Gemini 2.5 Flash** via `@google/genai`, using **structured JSON output with response schemas**, temperature 0.2, PDFs and photos sent inline | Multimodal (reads scans directly), cheap, fast, and the schema means the UI never parses free text. Model is configurable with `GEMINI_MODEL`. |
+| AI | **Gemini 3.5 Flash** (automatic fallback to Gemini 3.8 Flash, then one retry, when a model is overloaded) via `@google/genai`, using **structured JSON output with response schemas**, temperature 0.2, PDFs and photos sent inline | Multimodal (reads scans directly), cheap, fast, and the schema means the UI never parses free text. Model is configurable with `GEMINI_MODEL`. |
 | Auth | **JWT** (bcrypt-hashed passwords, 12h expiry, login rate-limited) and role checks on every route | Stateless and simple to deploy. |
 | Documents | **Cloudflare R2** (private bucket, S3 API), with automatic **fallback to PostgreSQL** when R2 isn't configured | Files are never public; they are streamed through the authenticated API. The fallback means the app runs with zero extra setup. |
 | Hosting | **Vercel** (frontend) and **Render** (API), with **Neon** (DB) | Free tiers, Git-based deploys. |
@@ -222,7 +222,8 @@ Log in as `va` / `Demo@123` and open the top file in the queue. Then try the sam
 | `DIRECT_URL` | ✅ | Direct (non-pooled) connection string, used by `prisma db push` |
 | `JWT_SECRET` | ✅ | Long random string |
 | `GEMINI_API_KEY` | for AI | From https://aistudio.google.com/app/apikey. Without it the app works and AI boxes say "not available". |
-| `GEMINI_MODEL` | | Default `gemini-2.5-flash` |
+| `GEMINI_MODEL` | | Default `gemini-3.5-flash` |
+| `GEMINI_FALLBACK_MODEL` | | Used when the main model is overloaded. Default `gemini-3.8-flash` |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | | If all are set, documents go to R2; otherwise they are stored in PostgreSQL |
 | `CORS_ORIGIN` | | Comma-separated frontend URLs |
 | `SLA_DAYS` | | Sakala time limit in days (default 21) |

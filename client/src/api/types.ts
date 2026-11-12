@@ -47,7 +47,7 @@ export interface DashboardSummary {
   top: ApplicationSummary[];
 }
 
-export interface Person { name: string; nameLocal?: string; role: Role }
+export interface Person { id?: string; name: string; nameLocal?: string; role: Role }
 
 export interface DocumentInfo {
   id: string;
@@ -73,7 +73,7 @@ export interface StageReport {
 
 export interface AuditEvent {
   id: string;
-  action: 'CREATED' | 'DOCUMENT_UPLOADED' | 'AI_ASSIST' | 'FORWARDED' | 'RETURNED' | 'RESUBMITTED' | 'APPROVED' | 'REJECTED';
+  action: 'CREATED' | 'DOCUMENT_UPLOADED' | 'DOCUMENT_REMOVED' | 'AI_ASSIST' | 'FORWARDED' | 'RETURNED' | 'RESUBMITTED' | 'APPROVED' | 'REJECTED';
   fromStage: Stage | null;
   toStage: Stage | null;
   comment: string | null;

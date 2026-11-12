@@ -3,7 +3,7 @@
  * otherwise stores bytes in PostgreSQL so the app still works with zero extra setup.
  * Files are never public – they are always streamed through the authenticated API.
  */
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { env, r2Enabled } from '../../config/env';
 
@@ -40,4 +40,10 @@ export async function getFile(doc: { storage: string; storageKey: string | null;
   const bytes = await res.Body?.transformToByteArray();
   if (!bytes) throw new Error('Empty object from R2');
   return Buffer.from(bytes);
+}
+
+/** Remove the stored bytes. DB-stored files go away with the row, so only R2 needs a call. */
+export async function deleteFile(doc: { storage: string; storageKey: string | null }): Promise<void> {
+  if (doc.storage !== 'r2' || !s3 || !doc.storageKey) return;
+  await s3.send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET, Key: doc.storageKey }));
 }
